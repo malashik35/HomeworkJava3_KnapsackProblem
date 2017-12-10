@@ -36,7 +36,7 @@ public class AnnealingKnapsackProblem {
                 currentFill = Arrays.copyOf(mutatedFill, mutatedFill.length);
             } else {
                 double probabilityToMutate = random.nextDouble();
-                double dE = Math.exp((double) - (currentCost - mutatedCost) /  ((double) tStart / t));
+                double dE = Math.exp((double) -(currentCost - mutatedCost) / ((double) tStart / t));
                 if ((mutatedWeight <= maxWeight) && (probabilityToMutate < dE)) {
                     currentFill = Arrays.copyOf(mutatedFill, mutatedFill.length);
                 }
@@ -61,27 +61,37 @@ public class AnnealingKnapsackProblem {
 
     private boolean[] initialFill() {
 
-        SortedMap<Pair<Item, Double>, Integer> mapWithGreedyCoefficients = new TreeMap<>((o1, o2) -> Double.compare
-                ((double) o2.getSecond(), o1.getSecond()));
+        SortedMap<Item, Integer> mapWithGreedyCoefficients = new TreeMap<>(new Comparator<Item>() {
+            @Override
+            public int compare(Item o1, Item o2) {
+                if (Double.compare((double) o2.getCost() / o2.getWeight(),(double) o1.getCost() / o1.getWeight()) != 0) {
+                    return Double.compare((double) o2.getCost() / o2.getWeight(), (double) o1.getCost() / o1.getWeight());
+                } else {
+                    return 1;
+                }
+            }
+        });
 
         for (int originalIndex = 0; originalIndex < items.size(); originalIndex++) {
             Item currentItem = items.get(originalIndex);
-            int itemWeight = currentItem.getWeight();
-            int itemCost = currentItem.getCost();
             mapWithGreedyCoefficients.put
-                    (new Pair<>(currentItem, ((double) itemCost / itemWeight)), originalIndex);
+                    (currentItem, originalIndex);
         }
 
         int currentWeight = 0;
 
-        for (Map.Entry<Pair<Item, Double>, Integer> entry : mapWithGreedyCoefficients.entrySet()) {
-            if (currentWeight + entry.getKey().getFirst().getWeight() > maxWeight)
-                continue;
-            else {
+        for (Map.Entry<Item, Integer> entry : mapWithGreedyCoefficients.entrySet()) {
+            if (currentWeight + entry.getKey().getWeight() <= maxWeight) {
                 currentFill[entry.getValue()] = true;
-                currentWeight += entry.getKey().getFirst().getWeight();
-            }
+                currentWeight += entry.getKey().getWeight();
 
+                try {
+                    assert ((entry.getKey().getWeight() == items.get(entry.getValue()).getWeight()) && (entry.getKey().getCost() == items.get(entry.getValue()).getCost()));
+                } catch (AssertionError e) {
+                    System.out.println("ex");
+                }
+
+            }
         }
 
         bestFill = Arrays.copyOf(currentFill, currentFill.length);
@@ -107,7 +117,6 @@ public class AnnealingKnapsackProblem {
 
 
         }
-
     }
 
     private int evaluateWeight(boolean[] array) {
